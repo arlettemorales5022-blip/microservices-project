@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: microservices-config
+  namespace: microservices-project
+data:
+  AUTH_SERVICE_URL: "http://auth-service:3001"
+  USERS_SERVICE_URL: "http://users-service:3002"
+  PRODUCTS_SERVICE_URL: "http://products-service:3003"
+  ORDERS_SERVICE_URL: "http://orders-service:3004"
+

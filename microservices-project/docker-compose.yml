@@ -1,0 +1,127 @@
+services:
+  auth-service:
+    build:
+      context: ./auth-service
+    image: microservices-project/auth-service:local
+    container_name: auth-service
+    environment:
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  users-service:
+    build:
+      context: ./users-service
+    image: microservices-project/users-service:local
+    container_name: users-service
+    environment:
+      PORT: 3002
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+    ports:
+      - "3002:3002"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3002/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  products-service:
+    build:
+      context: ./products-service
+    image: microservices-project/products-service:local
+    container_name: products-service
+    environment:
+      PORT: 3003
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+    ports:
+      - "3003:3003"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  orders-service:
+    build:
+      context: ./orders-service
+    image: microservices-project/orders-service:local
+    container_name: orders-service
+    environment:
+      PORT: 3004
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      PRODUCTS_SERVICE_URL: http://products-service:3003
+    ports:
+      - "3004:3004"
+    depends_on:
+      products-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3004/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gateway-service:
+    build:
+      context: ./gateway-service
+    image: microservices-project/gateway-service:local
+    container_name: gateway-service
+    environment:
+      PORT: 3000
+      AUTH_SERVICE_URL: http://auth-service:3001
+      USERS_SERVICE_URL: http://users-service:3002
+      PRODUCTS_SERVICE_URL: http://products-service:3003
+      ORDERS_SERVICE_URL: http://orders-service:3004
+    ports:
+      - "3000:3000"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      users-service:
+        condition: service_healthy
+      products-service:
+        condition: service_healthy
+      orders-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    container_name: prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      gateway-service:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3030:3000"
+    depends_on:
+      - prometheus
+

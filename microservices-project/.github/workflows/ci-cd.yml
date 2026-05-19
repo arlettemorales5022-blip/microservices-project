@@ -1,0 +1,41 @@
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - auth-service
+          - users-service
+          - products-service
+          - orders-service
+          - gateway-service
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        working-directory: ${{ matrix.service }}
+        run: npm install
+
+      - name: Validate service starts
+        working-directory: ${{ matrix.service }}
+        run: node --check server.js
+
+      - name: Build Docker image
+        run: docker build -t microservices-project/${{ matrix.service }}:${{ github.sha }} ./${{ matrix.service }}
+

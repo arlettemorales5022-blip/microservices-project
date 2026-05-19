@@ -1,0 +1,16 @@
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: products-service-pod-kill
+  namespace: microservices-project
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces:
+      - microservices-project
+    labelSelectors:
+      app: products-service
+  scheduler:
+    cron: "@every 2m"
+

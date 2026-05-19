@@ -1,0 +1,17 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: microservices-virtual-service
+  namespace: microservices-project
+spec:
+  hosts:
+    - microservices.local
+  gateways:
+    - microservices-istio-gateway
+  http:
+    - route:
+        - destination:
+            host: gateway-service.microservices-project.svc.cluster.local
+            port:
+              number: 3000
+
